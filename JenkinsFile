@@ -1,39 +1,15 @@
 pipeline {
-    environment {
-        repo_name = "xxxx.dkr.ecr.us-east-1.amazonaws.com"
-            registry = "$repo_name/<codeCommit>_repo"
-            region = "us-east-1"
-	    cluster = "xxx-cluster"
-            service = "xxx-api-svc"
-            task_definition = "xxx-api-task"
-    }
     agent any
     parameters {
         choice(choices: ['petproject-java'], description: 'Specify Git Repository Name', name: 'git_repo')
         choice(choices: ['gp-devsecops', 'master'], description: 'Specify Git Repository Branch Name', name: 'git_branch')
     }
 
-    stages {
-        stage("SCM Checkout") {
-            steps {
-                git branch: '$git_branch',
-                credentialsId: 'AWS',
-                url: 'https://git-codecommit.us-east-1.amazonaws.com/v1/repos/$git_repo'
-            }
-        }
-        stage('Code Build') {
-            steps {
-                script {
-                    timeout(time: 60, unit: 'MINUTES') {
-                        sh "mvn clean package -U -Dmaven.test.skip=true"
-						COMMIT_HASH = sh(returnStdout: true, script: 'git rev-parse HEAD | cut -c 1-7').trim()
-                    }
-                }
-                recordIssues enabledForFailure: false,
-                aggregatingResults: true,
-                tools: [mavenConsole(), java(), javaDoc()]
-            }
-        }
+        stage ('Build') {
+      steps {
+      sh 'mvn clean package'
+       }
+    }
         stage('Run Test') {
             parallel {
                 stage('Run JUnit Test') {
